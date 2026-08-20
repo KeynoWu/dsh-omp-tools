@@ -30,8 +30,8 @@
     "@deepseek-ai/dsh-settings": "^0.1.0-rc.8",
     "@deepseek-ai/dsh-subprocess": "^0.1.0-rc.8",
     "@deepseek-ai/dsh-tools": "^0.1.0-rc.8",
-    "@deepseek-ai/schemastery": "^3.18.1",
-    "@deepseek-ai/dsh-typert-protocol": "^0.1.0-rc.8"
+    "@deepseek-ai/dsh-typert-protocol": "^0.1.0-rc.8",
+    "@deepseek-ai/schemastery": "^3.18.1"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
@@ -51,7 +51,8 @@
   },
   "scripts": {
     "build:status": "esbuild src/modules/lsp/src/status.ts --format=esm --target=es2022 --outfile=src/modules/lsp/lib/status.js --log-level=warning && node src/modules/lsp/scripts/fix-status-paths.mjs",
+    "build:astgrep-status": "esbuild src/modules/astgrep/src/status.ts --format=esm --target=es2022 --outfile=src/modules/astgrep/lib/status.js --log-level=warning && node src/modules/astgrep/scripts/fix-status-paths.mjs",
     "build:client": "node scripts/build-client.mjs",
-    "build": "npm run build:status && npm run build:client"
+    "build": "npm run build:status && npm run build:astgrep-status && npm run build:client"
   }
 }

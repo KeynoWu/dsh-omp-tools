@@ -21,6 +21,7 @@ import '@deepseek-ai/dsh-api-remotes/client'
 import { resolveSlotLabel, type TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 import type { SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-runtime/client'
 import { registerLspTab } from '../modules/lsp/src/client/index.tsx'
+import { registerAstgrepTab } from '../modules/astgrep/src/client/index.tsx'
 
 // 壳声明的子 slot：每个能力模块一个 tab（对齐 settings.plugins.tab 声明模式）
 declare module '@deepseek-ai/dsh-client-ui-slots' {
@@ -225,8 +226,9 @@ export function apply(ctx: Context) {
     children: { 'omp-tools.tab': { kind: 'list', scope: 'root' } },
   }, OmpToolsSection))
 
-  // 能力模块 tab：迭代 1 = LSP 语言
+  // 能力模块 tab：迭代 1 = LSP 语言，迭代 2 = AST 搜索
   registerLspTab(ctx)
+  registerAstgrepTab(ctx)
 }
 
 export const inject = ['slots', 'locale', 'connection', 'remote', 'settingsScope'] as const

@@ -14,7 +14,7 @@
 | 模块 | 能力 | 状态 |
 |---|---|---|
 | **lsp** | 语言服务器池 + 语义工具（诊断/定义/引用/hover/rename） | ✅ 已完成（迭代 1） |
-| astgrep | AST 结构化搜索/编辑（语法感知批量重写） | 📋 规划（迭代 2） |
+| **astgrep** | AST 结构化搜索/批量重写（语法感知，避开注释/字符串噪音） | ✅ 已完成（迭代 2） |
 | edit | hashline 锚定编辑（防过期内容编辑） | 📋 规划（迭代 3） |
 | read | 大文件摘要 + 选择器（省 token） | 📋 规划（迭代 3） |
 | memory | learn/checkpoint（跨会话沉淀） | 📋 规划（迭代 4） |
@@ -60,6 +60,26 @@
 
 ---
 
+## 模块 2：AST 结构化搜索/批量重写
+
+**语法感知的搜索与变换**（ast-grep）：按代码结构模式查找/替换一批代码，**避开注释和字符串噪音**——比 grep 精确，跨文件一致改写。与 LSP 互补：LSP 回答「符号在哪」（语义导航），ast-grep 回答「按结构找一批 / 按结构改一批」（变换）。
+
+### 工具
+
+| 工具 | 作用 |
+|---|---|
+| `ast_search` | AST 结构化搜索：`pattern` 用 ast-grep 模式语法（`$A`/`$B` 通配变量，如 `"$A.foo($B)"` 匹配任意对象调用 `foo`），返回文件:行:列 + 匹配文本 |
+| `ast_edit` | AST 批量重写：`pattern` + `rewrite`（`$A` 引用捕获），一次改一批；**写操作经 DSH 文件审批**；`dryRun: true` 只预览不写盘 |
+
+**支持 16 种常用语言**（前端/后端/iOS/Android）：TypeScript、JavaScript、TSX、JSX、HTML、CSS、Python、Go、Rust、Java、C#、PHP、Ruby、C/C++、Swift、Kotlin（ast-grep CLI 内置全部 tree-sitter 解析器）。
+
+**实现要点**：
+- 无长驻进程——每次调用 spawn `ast-grep run --json=stream`（纯静态分析）
+- 二进制**不随插件安装**：检测 `ast-grep`（旧名 `sg` 兜底）；缺失时设置页显示状态 + 一键安装引导（`npm i -g @ast-grep/cli`）
+- 写盘不走 CLI `--update-all`（那会绕过沙箱），而是 CLI dry-run 产出的**字节区间编辑经 `ctx.fs` 应用**——审批/沙箱与 `lsp_rename` 同层
+
+---
+
 ## 快速开始
 
 ```bash
@@ -74,6 +94,7 @@ ln -s "$(pwd)" ~/.dsh/profiles/web/node_modules/dsh-omp-tools
 #       config:
 #         modules:
 #           lsp: true
+#           astgrep: true
 
 # 3. 重启 dsh web，开始享受语义级 coding
 ```
@@ -82,12 +103,15 @@ ln -s "$(pwd)" ~/.dsh/profiles/web/node_modules/dsh-omp-tools
 
 ```bash
 npm i -g typescript-language-server pyright   # TS/JS + Python（P0，最成熟）
+npm i -g @ast-grep/cli                        # AST 结构化搜索/批量重写（迭代 2）
 # 其他语言：gopls / rust-analyzer / clangd / sourcekit-lsp 等按需安装
 ```
 
 ## 设置
 
-设置 → **OMP Tools** → **LSP 语言** 页：按岗位分组的 16 语言勾选 + 空闲回收超时 + 并发上限；每行显示状态徽标（可用 ✓版本 / 缺失 ⚠ + 安装按钮）。也可直接编辑 `~/.dsh/settings.yaml`（外部编辑自动生效）：
+设置 → **OMP Tools**：tabs 组织能力模块（**LSP 语言** / **AST 搜索**）。
+
+- **LSP 语言** 页：按岗位分组的 16 语言勾选 + 空闲回收超时 + 并发上限；每行显示状态徽标（可用 ✓版本 / 缺失 ⚠ + 安装按钮）。也可直接编辑 `~/.dsh/settings.yaml`（外部编辑自动生效）：
 
 ```yaml
 lsp:
@@ -97,6 +121,8 @@ lsp:
   idleTimeoutMs: 300000
   maxConcurrentServers: 4
 ```
+
+- **AST 搜索** 页：ast-grep 二进制状态（可用 ✓版本 / 缺失 ⚠ + 安装按钮）+ 支持语言列表（只读，工具按需指定语言，无配置项）。
 
 ## 开发与验证
 
