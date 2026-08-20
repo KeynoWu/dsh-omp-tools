@@ -39,9 +39,9 @@ export class AstgrepStatusGateway extends TypertRemoteService {
   }
 
   /** 安装引导：npm 全局安装 @ast-grep/cli（用户显式触发）。
-   *  注意：方法名不能用 `install`——它是 typert RemoteNamespaceService 的保留方法（M4 踩坑）。 */
+   *  方法名必须与 @Remote 参数一致且避开保留名 `install`（typert M4 踩坑）。 */
   @Remote('installBinary')
-  async install(): Promise<AstgrepInstallResult> {
+  async installBinary(): Promise<AstgrepInstallResult> {
     const cwd = process.cwd()
     const argv = [ASTGREP_INSTALL.command, ...ASTGREP_INSTALL.args]
     try {

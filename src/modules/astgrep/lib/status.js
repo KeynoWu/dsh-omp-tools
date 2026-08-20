@@ -45,11 +45,11 @@ var __privateIn = (member, obj) => Object(obj) !== obj ? __typeError('Cannot use
 var __privateGet = (obj, member, getter) => (__accessCheck(obj, member, "read from private field"), getter ? getter.call(obj) : member.get(obj));
 var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 var __privateMethod = (obj, member, method) => (__accessCheck(obj, member, "access private method"), method);
-var _install_dec, _describe_dec, _a, _init;
+var _installBinary_dec, _describe_dec, _a, _init;
 import { Remote, TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
 import { ASTGREP_CATALOG, ASTGREP_INSTALL } from "../src/catalog.ts";
 import { detectAstgrep } from "../src/search.ts";
-class AstgrepStatusGateway extends (_a = TypertRemoteService, _describe_dec = [Remote("describe")], _install_dec = [Remote("installBinary")], _a) {
+class AstgrepStatusGateway extends (_a = TypertRemoteService, _describe_dec = [Remote("describe")], _installBinary_dec = [Remote("installBinary")], _a) {
   constructor(ctx) {
     super(ctx, "astgrepStatus");
     __runInitializers(_init, 5, this);
@@ -62,7 +62,7 @@ class AstgrepStatusGateway extends (_a = TypertRemoteService, _describe_dec = [R
       installCommand: `${ASTGREP_INSTALL.command} ${ASTGREP_INSTALL.args.join(" ")}`
     };
   }
-  async install() {
+  async installBinary() {
     const cwd = process.cwd();
     const argv = [ASTGREP_INSTALL.command, ...ASTGREP_INSTALL.args];
     try {
@@ -92,7 +92,7 @@ class AstgrepStatusGateway extends (_a = TypertRemoteService, _describe_dec = [R
 }
 _init = __decoratorStart(_a);
 __decorateElement(_init, 1, "describe", _describe_dec, AstgrepStatusGateway);
-__decorateElement(_init, 1, "install", _install_dec, AstgrepStatusGateway);
+__decorateElement(_init, 1, "installBinary", _installBinary_dec, AstgrepStatusGateway);
 __decoratorMetadata(_init, AstgrepStatusGateway);
 export {
   AstgrepStatusGateway
