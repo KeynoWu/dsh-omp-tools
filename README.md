@@ -87,7 +87,7 @@ npm i -g typescript-language-server pyright   # TS/JS + Python（P0，最成熟�
 
 ## 设置
 
-设置 → **LSP 语言**：按岗位分组的 16 语言勾选 + 空闲回收超时 + 并发上限；每行显示状态徽标（可用 ✓版本 / 缺失 ⚠ + 安装按钮）。也可直接编辑 `~/.dsh/settings.yaml`（外部编辑自动生效）：
+设置 → **OMP Tools** → **LSP 语言** 页：按岗位分组的 16 语言勾选 + 空闲回收超时 + 并发上限；每行显示状态徽标（可用 ✓版本 / 缺失 ⚠ + 安装按钮）。也可直接编辑 `~/.dsh/settings.yaml`（外部编辑自动生效）：
 
 ```yaml
 lsp:

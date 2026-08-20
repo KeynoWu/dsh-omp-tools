@@ -1,7 +1,8 @@
 /**
- * DSH LSP 插件 client 端：设置页（M3 host 接线 + M4 状态数据源）。
- * 注册 `settings.section` slot（设置 → "LSP 语言"），语言勾选写入 `lsp` namespace。
- * M4：语言目录与检测状态改由 host remote（`ctx.remote.lspStatus.describe()`）下发，
+ * dsh-omp-tools · LSP 模块 client 端：OMP Tools 设置页的「LSP 语言」tab（迭代 1）。
+ * 由根壳（src/client/index.tsx）的 registerLspTab 装配：注册 `omp-tools.tab`
+ * 贡献（id: 'lsp'），语言勾选写入 `lsp` namespace。
+ * host remote（`ctx.remote.lspStatus.describe()`）下发语言目录与检测状态，
  * 消除双份维护，并展示 可用✓/缺失⚠/版本 状态徽标。
  */
 import { useState, useEffect } from 'react'
@@ -119,7 +120,6 @@ interface LspSettingsValue {
 }
 
 interface SectionProps {
-  close: () => void
   /** slots 系统注入的 translate（按注册时 locale: NS） */
   t: TranslateNS<'lsp'>
   /** slots 系统把 hooks 包装成的 selector hook（对应 hooks.scope） */
@@ -287,9 +287,9 @@ function LspSettingsSection({ t, useScope, setEnabled, setIdle, loadStatus, inst
   )
 }
 
-export function apply(ctx: Context) {
+export function registerLspTab(ctx: Context) {
   const t = ctx.locale.bind(NS)
-  ctx.effect(() => ctx.locale.register(NS, dictionaries), 'dsh-omp-tools: section dictionaries')
+  ctx.effect(() => ctx.locale.register(NS, dictionaries), 'dsh-omp-tools:lsp tab dictionaries')
   const scope = ctx.settingsScope.bind({ namespace: NS })
 
   // 挂载 host remote 贡献（lspStatus.describe/install）——codec 必须 strict + zod schema（与 host manifest 对称）
@@ -347,10 +347,11 @@ export function apply(ctx: Context) {
     console.error('[dsh-omp-tools] $mount failed:', e)
   })
 
-  ctx.slots.inject('settings.section', () => ctx.slots.register({
-    name: 'settings.section',
+  // OMP Tools 设置页的「LSP 语言」tab（根壳渲染 tablist，本模块注册贡献）
+  ctx.slots.inject('omp-tools.tab', () => ctx.slots.register({
+    name: 'omp-tools.tab',
     id: 'lsp',
-    order: 20,
+    order: 0,
     label: () => t('nav'),
     locale: NS,
     inject: () => ({
@@ -372,5 +373,3 @@ export function apply(ctx: Context) {
     }),
   }, LspSettingsSection))
 }
-
-export const inject = ['slots', 'locale', 'connection', 'remote', 'settingsScope'] as const

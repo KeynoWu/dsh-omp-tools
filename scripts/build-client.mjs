@@ -1,7 +1,8 @@
-// client bundle 构建：esbuild 打包模块 client 入口 → 根 lib/client.js（DSH ModuleLoader 格式）
+// client bundle 构建：esbuild 打包根 client 壳 → 根 lib/client.js（DSH ModuleLoader 格式）
 // 对齐官方 client.js 结构：window.__ModuleLoader__.load({ id, factory: (require) => {...} })
 // external：react / react/jsx-runtime / @deepseek-ai/*（由 web 前端的模块系统提供）
-// 多模块演进：后续模块的 client 入口以多 entry 合并进同一 bundle（见 README 维护说明）。
+// 装配：根 src/client/index.tsx 是唯一 entry（OMP Tools 壳），静态 import 各模块的
+// register 函数（迭代 1：registerLspTab）；新增模块在此 entry 里挂接。
 import { build } from 'esbuild'
 import { readFileSync, writeFileSync, rmSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -12,7 +13,7 @@ const outBundle = join(root, 'lib', 'client.bundle.js')
 const outFinal = join(root, 'lib', 'client.js')
 
 await build({
-  entryPoints: [join(root, 'src', 'modules', 'lsp', 'src', 'client', 'index.tsx')],
+  entryPoints: [join(root, 'src', 'client', 'index.tsx')],
   bundle: true,
   format: 'cjs',
   platform: 'browser',
