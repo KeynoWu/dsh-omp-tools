@@ -1,7 +1,7 @@
 {
-  "name": "dsh-lsp-plugin",
-  "version": "0.2.0-m3",
-  "description": "DSH LSP plugin — language server pool + semantic tools (M3: 四工具 + settings section + client 设置页源码)",
+  "name": "dsh-omp-tools",
+  "version": "0.1.0",
+  "description": "DSH coding 增强工具集 — omp 风格能力分批迭代（模块 1：LSP 语义导航/诊断）",
   "type": "module",
   "main": "src/index.ts",
   "exports": {
@@ -46,12 +46,12 @@
     "@types/react": "^18.3.0",
     "esbuild": "^0.28.2",
     "react": "^18.2.0",
-    "tsdown": "^0.22.0",
-    "typescript": "^5.5.0"
+    "typescript": "^5.5.0",
+    "zod": "^4.4.3"
   },
   "scripts": {
-    "bundle": "tsdown --entry src/client/index.tsx --format esm --platform browser --out-dir lib --sourcemap && node scripts/wrap-client.mjs",
-    "build": "pnpm run build:status && node scripts/build-client.mjs",
-    "build:status": "esbuild src/status.ts --format=esm --target=es2022 --outfile=lib/status.js --log-level=warning && node scripts/fix-status-paths.mjs"
+    "build:status": "esbuild src/modules/lsp/src/status.ts --format=esm --target=es2022 --outfile=src/modules/lsp/lib/status.js --log-level=warning && node src/modules/lsp/scripts/fix-status-paths.mjs",
+    "build:client": "node scripts/build-client.mjs",
+    "build": "npm run build:status && npm run build:client"
   }
 }

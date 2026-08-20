@@ -1,4 +1,4 @@
-# DSH LSP 插件设计文档
+# dsh-omp-tools · LSP 模块设计文档（迭代 1）
 
 > 状态：设计讨论定稿（v1）→ 审查修订（v2）：按 2026 架构审查补齐平面归属、超时策略、projectRoot 语义与 M0 清单
 > 目标：为 DeepSeek Harness（DSH）提供本地 LSP 能力——设置页勾选启用语言，运行时通过工具 seam 暴露诊断/定义/引用/hover 等语义能力，提升 coding 场景准确度。
@@ -269,7 +269,7 @@ lsp:
   6. ⏳ 慢启动与超时：`readyTimeoutMs` 独立预算逻辑已定稿（§4 共同约定），M2 接重语言时实测
   - **M0 环境发现**：全局 `typescript@7.0.2` 为 Go 原生版，**无 `lib/tsserver.js`**，tls 需 workspace 内 TS 5.x（fixture 装 5.9.3 后即通）——catalog 检测与文档提示需考虑"服务器配套依赖"（tsserver 场景即 TS 5.x）
 
-- **M1/M2 实现记录**（`scratch-lsp-plugin/`，2026 实测）：
+- **M1/M2 实现记录**（`src/modules/lsp/`，2026 实测）：
   - 结构：`src/index.ts`（apply/Config/inject）+ `catalog.ts`（17 语言全量）+ `detect.ts`（本地 bin→PATH+版本）+ `jsonrpc.ts`（Content-Length 帧）+ `client.ts`（LspClient/LspPool）+ `tools.ts`（四工具）；纯 ESM TS，node `--experimental-strip-types` 直接跑，无构建步骤
   - **M1 验收（用户会话实测）**：agent 调用 `lsp_definition`，`index.ts:6:13`（调用点）→ `index.ts:1:10`（定义）+ 上下文行，与无 GUI 验证一致
   - **M2 无 GUI 验证 9/9 + 崩溃重试 PASS**（`m2-check.mjs` / `m2b-crash-check.mjs`）：TS 四工具（definition/hover/references/diagnostics 含 broken.ts 类型错误 code 2322）、Python 三工具（pyright-langserver）、idle 回收（in-flight 跳过）、崩溃重试（一次自动重启 + 二次拒绝标记故障）
@@ -288,7 +288,7 @@ lsp:
       - 组件 props 契约（官方模式）：inject 返回 `{ hooks: { scope }, setEnabled, setIdle }`——hooks 键变成 `useXxx` selector hook（`SnapshotSelectorHook<SettingsScopeSnapshot<unknown>>`），额外键直接作为 props；`t` 由 slots 系统按 `locale: NS` 注入（类型 `TranslateNS<'lsp'>`）
       - 类型要点：`LocaleNamespaceMap` 增强声明**键 union**（`(LocaleNamespaceMap[N] & string)` 取键，不能是字典对象）；`z.infer` 在 schemastery 不可用，类型独立声明（llm-pi-ai 的 `z<Config>` 模式）
       - **构建链已解决（esbuild 手动构建）**：`scripts/build-client.mjs` 用 esbuild 打包（external react/react-jsx-runtime/@deepseek-ai/*，format cjs）→ 手工 wrap 成 `window.__ModuleLoader__.load({id, factory})`——产物 `lib/client.js`（8KB）**模拟加载通过**（exports apply/inject，与官方格式逐点对齐）
-      - **挂载改造（关键）**：client-modules 按 `require.resolve('${pkgName}/package.json')` 解析 client bundle——**绝对路径 entry 不行，必须包名挂载**。已把插件 symlink 进 `~/.dsh/profiles/web/node_modules/dsh-lsp-plugin`，patch entry 改 `name: dsh-lsp-plugin`（main 仍指向 src/index.ts，strip-types 下加载验证通过）；`dsh --dump-config` 组合树合成 ✅、clientPath 解析 ✅（lib/client.js 存在）、dsh.client.inject 6 包 ✅
+      - **挂载改造（关键）**：client-modules 按 `require.resolve('${pkgName}/package.json')` 解析 client bundle——**绝对路径 entry 不行，必须包名挂载**。已把插件 symlink 进 `~/.dsh/profiles/web/node_modules/dsh-omp-tools`，patch entry 改 `name: dsh-omp-tools`（main 仍指向 src/index.ts，strip-types 下加载验证通过）；`dsh --dump-config` 组合树合成 ✅、clientPath 解析 ✅（lib/client.js 存在）、dsh.client.inject 6 包 ✅
       - 语言列表当前为 client 端双份维护（与 host catalog 对齐）；M4 改 host remote 下发消除重复
   - **M4 host remote 打通（2026 实测，设置页状态徽标正常显示）**——手写 typert remote 的完整约束链：
     1. **host manifest（`lib/typert.host.js`）**：typert-loader 按包名扫描 exports `"./typert"`；`TYPERT.model` **必填**（`{ services/events/objects }`，缺失直接启动崩溃）；invocation codec **必须 `mode: 'strict'` + typeSymbol + zod v4 schema**（`src-json` 被拒）

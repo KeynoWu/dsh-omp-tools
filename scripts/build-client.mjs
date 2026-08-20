@@ -1,6 +1,7 @@
-// client bundle 构建：esbuild 打包 src/client/index.tsx → lib/client.js（DSH ModuleLoader 格式）
+// client bundle 构建：esbuild 打包模块 client 入口 → 根 lib/client.js（DSH ModuleLoader 格式）
 // 对齐官方 client.js 结构：window.__ModuleLoader__.load({ id, factory: (require) => {...} })
 // external：react / react/jsx-runtime / @deepseek-ai/*（由 web 前端的模块系统提供）
+// 多模块演进：后续模块的 client 入口以多 entry 合并进同一 bundle（见 README 维护说明）。
 import { build } from 'esbuild'
 import { readFileSync, writeFileSync, rmSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -11,7 +12,7 @@ const outBundle = join(root, 'lib', 'client.bundle.js')
 const outFinal = join(root, 'lib', 'client.js')
 
 await build({
-  entryPoints: [join(root, 'src', 'client', 'index.tsx')],
+  entryPoints: [join(root, 'src', 'modules', 'lsp', 'src', 'client', 'index.tsx')],
   bundle: true,
   format: 'cjs',
   platform: 'browser',
@@ -26,7 +27,7 @@ const code = readFileSync(outBundle, 'utf8')
   .map((line) => (line.length > 0 ? '    ' + line : line))
   .join('\n')
 const wrapped = `window.__ModuleLoader__.load({
-	id: "dsh-lsp-plugin",
+	id: "dsh-omp-tools",
 	factory: (require) => {
 		var module = { exports: {} };
 		var exports = module.exports;

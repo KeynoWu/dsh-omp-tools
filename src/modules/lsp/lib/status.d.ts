@@ -30,5 +30,5 @@ export interface LspInstallResult {
 export class LspStatusGateway {
   constructor(ctx: Context, getConfig: () => { enabled: Record<string, boolean>; idleTimeoutMs: number })
   describe(): LspStatusDescribe
-  install(languageId: string): Promise<LspInstallResult>
+  installLanguage(languageId: string): Promise<LspInstallResult>
 }

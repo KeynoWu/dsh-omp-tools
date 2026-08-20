@@ -1,16 +1,33 @@
-# dsh-lsp-plugin
+# dsh-omp-tools
 
-**给 DeepSeek Harness 装上真正的语言智能**：内置语言服务器检测与进程池，让 agent 在 coding 时拥有语义级的「查错 / 找定义 / 找引用 / 看类型」能力——不再靠猜。
+**给 DeepSeek Harness 的 coding 能力增强工具集**——参考 oh-my-pi（omp）的 LSP 封装与工具设计，按能力模块分批迭代。**模块 1（LSP 语义导航/诊断）已完成**。
 
-> 状态：M1–M4 已实现并通过验证（设计文档：[lsp-plugin-design.md](./lsp-plugin-design.md) v2）
+> 状态：模块 1（LSP）M1–M4 已实现并通过验证；模块 2+（ast-grep / hashline 编辑 / read 摘要 / memory）规划中
+> 设计文档：[docs/lsp-module-design.md](./docs/lsp-module-design.md) v2
 
 ---
 
-## 为什么需要它：DSH 原本只有「文本级近似」
+## 模块化架构
 
-没有 LSP 时，agent 在代码库里是这样工作的：
+一个插件包 = 宿主装配层（`src/index.ts`）+ 能力模块（`src/modules/<id>/`）。模块间零依赖，`config.modules.<id>` 开关控制挂载；未启用的模块不注册任何工具、不加载依赖。
 
-| 想做的事 | 没有 LSP（现状） | 有了 LSP（本插件） |
+| 模块 | 能力 | 状态 |
+|---|---|---|
+| **lsp** | 语言服务器池 + 语义工具（诊断/定义/引用/hover/rename） | ✅ 已完成（迭代 1） |
+| astgrep | AST 结构化搜索/编辑（语法感知批量重写） | 📋 规划（迭代 2） |
+| edit | hashline 锚定编辑（防过期内容编辑） | 📋 规划（迭代 3） |
+| read | 大文件摘要 + 选择器（省 token） | 📋 规划（迭代 3） |
+| memory | learn/checkpoint（跨会话沉淀） | 📋 规划（迭代 4） |
+
+---
+
+## 模块 1：LSP 语义导航/诊断
+
+**给 DSH 装上真正的语言智能**：内置语言服务器检测与进程池，让 agent 在 coding 时拥有语义级的「查错 / 找定义 / 找引用 / 看类型」能力——不再靠猜。
+
+没有 LSP 时，agent 在代码库里只能做「文本级近似」：
+
+| 想做的事 | 没有 LSP（现状） | 有了 LSP（本模块） |
 |---|---|---|
 | **写完代码查错** | 手动跑编译器/测试——慢、要搭命令、输出噪音大 | `lsp_diagnostics`：**毫秒级增量诊断，精确到行**，改完 A 立刻知道有没有破坏 B |
 | **找定义 / 引用** | `grep` 字符串匹配——漏别名/重导出/动态分发，混进注释和字符串噪音 | `lsp_definition` / `lsp_references`：**语义精确匹配**，穿透 `import` 别名、重导出、动态分发，不含噪音 |
@@ -21,9 +38,7 @@
 
 **它最值钱的使用场景**：agent 在长会话、大代码库里「行动前先验证、行动后先查错」——这正是当前 coding agent 最常出错、最需要精确信息的地方。
 
----
-
-## 能力
+### 工具
 
 **五个工具**（四个只读 + 一个写操作，全部基于 LSP 语义分析，非文本搜索）：
 
@@ -50,15 +65,15 @@
 ```bash
 # 1. 克隆本仓库，链接插件到目标 profile（以 web profile 为例）
 mkdir -p ~/.dsh/profiles/web/node_modules
-ln -s "$(pwd)/scratch-lsp-plugin" ~/.dsh/profiles/web/node_modules/dsh-lsp-plugin
+ln -s "$(pwd)" ~/.dsh/profiles/web/node_modules/dsh-omp-tools
 
 # 2. 在 ~/.dsh/profiles/web/cordis.patch.yml 挂载：
 # - insert:
-#     - id: dsh-lsp-plugin
-#       name: dsh-lsp-plugin
+#     - id: dsh-omp-tools
+#       name: dsh-omp-tools
 #       config:
-#         enabled:
-#           typescript: true
+#         modules:
+#           lsp: true
 
 # 3. 重启 dsh web，开始享受语义级 coding
 ```
@@ -86,12 +101,11 @@ lsp:
 ## 开发与验证
 
 ```bash
-cd scratch-lsp-plugin && npx tsc --noEmit          # 类型检查
-node scripts/build-client.mjs                      # client bundle（DSH ModuleLoader 格式）
-npm run build:status                               # host remote gateway（装饰器转译）
+npm run build          # build:status（host remote 装饰器转译）+ build:client（ModuleLoader bundle）
+npx tsc --noEmit       # 类型检查
 ```
 
-各里程碑的验证结论（沙箱 spawn、双向 JSON-RPC、五工具 TS/Python 9/9、崩溃重试、settings 接线、慢启动独立预算、并发上限、pyright 噪音修复）记录在设计文档 [lsp-plugin-design.md](./lsp-plugin-design.md) §11.3；开发期验证脚本依赖本机 DSH 安装，保存在仓库历史中，需要时从 git 历史找回。
+各里程碑的验证结论（沙箱 spawn、双向 JSON-RPC、五工具 TS/Python 9/9、崩溃重试、settings 接线、慢启动独立预算、并发上限、pyright 噪音修复）记录在设计文档 [docs/lsp-module-design.md](./docs/lsp-module-design.md) §11.3；开发期验证脚本依赖本机 DSH 安装，保存在仓库历史中，需要时从 git 历史找回。
 
 ## 里程碑
 

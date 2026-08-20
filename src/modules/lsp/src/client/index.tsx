@@ -289,12 +289,12 @@ function LspSettingsSection({ t, useScope, setEnabled, setIdle, loadStatus, inst
 
 export function apply(ctx: Context) {
   const t = ctx.locale.bind(NS)
-  ctx.effect(() => ctx.locale.register(NS, dictionaries), 'dsh-lsp-plugin: section dictionaries')
+  ctx.effect(() => ctx.locale.register(NS, dictionaries), 'dsh-omp-tools: section dictionaries')
   const scope = ctx.settingsScope.bind({ namespace: NS })
 
   // 挂载 host remote 贡献（lspStatus.describe/install）——codec 必须 strict + zod schema（与 host manifest 对称）
   void ctx.remote.$mount({
-    package: 'dsh-lsp-plugin',
+    package: 'dsh-omp-tools',
     descriptors: [{
       id: 'lspStatus.describe',
       service: 'lspStatus',
@@ -304,7 +304,7 @@ export function apply(ctx: Context) {
       parameters: [],
       result: {
         mode: 'strict',
-        typeSymbol: 'dsh-lsp-plugin/types#LspStatusDescribe',
+        typeSymbol: 'dsh-omp-tools/types#LspStatusDescribe',
         schema: z.object({
           languages: z.array(z.object({
             id: z.string(), displayName: z.string(), group: z.string(), priority: z.string(),
@@ -331,7 +331,7 @@ export function apply(ctx: Context) {
       }],
       result: {
         mode: 'strict',
-        typeSymbol: 'dsh-lsp-plugin/types#LspInstallResult',
+        typeSymbol: 'dsh-omp-tools/types#LspInstallResult',
         schema: z.object({
           ok: z.boolean(),
           status: z.object({
@@ -344,7 +344,7 @@ export function apply(ctx: Context) {
     }],
   }).catch((e: unknown) => {
     // 暴露 $mount 失败原因（开发期排查用；remote 未就绪时设置页降级为内置列表）
-    console.error('[dsh-lsp-plugin] $mount failed:', e)
+    console.error('[dsh-omp-tools] $mount failed:', e)
   })
 
   ctx.slots.inject('settings.section', () => ctx.slots.register({
