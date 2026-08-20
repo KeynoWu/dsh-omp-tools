@@ -14,6 +14,7 @@ import '@deepseek-ai/dsh-client-locale/client'
 import '@deepseek-ai/dsh-client-ui-settings/client'
 import '@deepseek-ai/dsh-api-remotes/client'
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
+import type { InvocationDescriptor } from '@deepseek-ai/dsh-typert-protocol'
 import type { SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-runtime/client'
 
 // 增强 LocaleNamespaceMap：注册本插件自己的 locale namespace（值取字典键集合）
@@ -60,6 +61,59 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 }
 
 const NS = 'lsp'
+
+/**
+ * host remote 贡献描述符（lspStatus.describe/installLanguage）——codec 必须
+ * strict + zod schema（与 host manifest 对称）。由根壳统一 $mount：
+ * typert RemoteStore 按 package 名注册、只允许一次，多模块必须合并 descriptors。
+ */
+export const lspRemoteDescriptors: InvocationDescriptor[] = [{
+  id: 'lspStatus.describe',
+  service: 'lspStatus',
+  namespace: 'lspStatus',
+  method: 'describe',
+  invocation: { kind: 'direct' } as const,
+  parameters: [],
+  result: {
+    mode: 'strict',
+    typeSymbol: 'dsh-omp-tools/types#LspStatusDescribe',
+    schema: z.object({
+      languages: z.array(z.object({
+        id: z.string(), displayName: z.string(), group: z.string(), priority: z.string(),
+        heavy: z.boolean().optional(), experimental: z.boolean().optional(),
+      })),
+      statuses: z.record(z.string(), z.object({
+        found: z.boolean(), version: z.string().optional(), reason: z.string().optional(),
+      })),
+      enabled: z.record(z.string(), z.boolean()),
+      idleTimeoutMs: z.number(),
+    }),
+  },
+}, {
+  id: 'lspStatus.installLanguage',
+  service: 'lspStatus',
+  namespace: 'lspStatus',
+  method: 'installLanguage',
+  invocation: { kind: 'direct' } as const,
+  parameters: [{
+    name: 'languageId',
+    wire: 'languageId',
+    source: 'json',
+    codec: { mode: 'strict', typeSymbol: 'string', schema: z.string() },
+  }],
+  result: {
+    mode: 'strict',
+    typeSymbol: 'dsh-omp-tools/types#LspInstallResult',
+    schema: z.object({
+      ok: z.boolean(),
+      status: z.object({
+        found: z.boolean(), version: z.string().optional(), reason: z.string().optional(),
+      }).optional(),
+      message: z.string().optional(),
+      command: z.string().optional(),
+    }),
+  },
+}]
 
 /**
  * fallback 语言列表：仅当 host remote（lspStatus.describe）不可用时使用，
@@ -291,61 +345,6 @@ export function registerLspTab(ctx: Context) {
   const t = ctx.locale.bind(NS)
   ctx.effect(() => ctx.locale.register(NS, dictionaries), 'dsh-omp-tools:lsp tab dictionaries')
   const scope = ctx.settingsScope.bind({ namespace: NS })
-
-  // 挂载 host remote 贡献（lspStatus.describe/install）——codec 必须 strict + zod schema（与 host manifest 对称）
-  void ctx.remote.$mount({
-    package: 'dsh-omp-tools',
-    descriptors: [{
-      id: 'lspStatus.describe',
-      service: 'lspStatus',
-      namespace: 'lspStatus',
-      method: 'describe',
-      invocation: { kind: 'direct' },
-      parameters: [],
-      result: {
-        mode: 'strict',
-        typeSymbol: 'dsh-omp-tools/types#LspStatusDescribe',
-        schema: z.object({
-          languages: z.array(z.object({
-            id: z.string(), displayName: z.string(), group: z.string(), priority: z.string(),
-            heavy: z.boolean().optional(), experimental: z.boolean().optional(),
-          })),
-          statuses: z.record(z.string(), z.object({
-            found: z.boolean(), version: z.string().optional(), reason: z.string().optional(),
-          })),
-          enabled: z.record(z.string(), z.boolean()),
-          idleTimeoutMs: z.number(),
-        }),
-      },
-    }, {
-      id: 'lspStatus.installLanguage',
-      service: 'lspStatus',
-      namespace: 'lspStatus',
-      method: 'installLanguage',
-      invocation: { kind: 'direct' },
-      parameters: [{
-        name: 'languageId',
-        wire: 'languageId',
-        source: 'json',
-        codec: { mode: 'strict', typeSymbol: 'string', schema: z.string() },
-      }],
-      result: {
-        mode: 'strict',
-        typeSymbol: 'dsh-omp-tools/types#LspInstallResult',
-        schema: z.object({
-          ok: z.boolean(),
-          status: z.object({
-            found: z.boolean(), version: z.string().optional(), reason: z.string().optional(),
-          }).optional(),
-          message: z.string().optional(),
-          command: z.string().optional(),
-        }),
-      },
-    }],
-  }).catch((e: unknown) => {
-    // 暴露 $mount 失败原因（开发期排查用；remote 未就绪时设置页降级为内置列表）
-    console.error('[dsh-omp-tools] $mount failed:', e)
-  })
 
   // OMP Tools 设置页的「LSP 语言」tab（根壳渲染 tablist，本模块注册贡献）
   ctx.slots.inject('omp-tools.tab', () => ctx.slots.register({

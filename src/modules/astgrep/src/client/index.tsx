@@ -13,6 +13,7 @@ import '@deepseek-ai/dsh-client-locale/client'
 import '@deepseek-ai/dsh-client-ui-settings/client'
 import '@deepseek-ai/dsh-api-remotes/client'
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
+import type { InvocationDescriptor } from '@deepseek-ai/dsh-typert-protocol'
 
 // 增强 LocaleNamespaceMap：注册本模块的 locale namespace
 type AstgrepLocaleKey =
@@ -91,6 +92,52 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
 }
 
 const NS = 'astgrep'
+
+/**
+ * host remote 贡献描述符（astgrepStatus.describe/installBinary）——codec 必须
+ * strict + zod schema（与 host manifest 对称）。由根壳统一 $mount：
+ * typert RemoteStore 按 package 名注册、只允许一次，多模块必须合并 descriptors。
+ */
+export const astgrepRemoteDescriptors: InvocationDescriptor[] = [{
+  id: 'astgrepStatus.describe',
+  service: 'astgrepStatus',
+  namespace: 'astgrepStatus',
+  method: 'describe',
+  invocation: { kind: 'direct' } as const,
+  parameters: [],
+  result: {
+    mode: 'strict',
+    typeSymbol: 'dsh-omp-tools/types#AstgrepStatusDescribe',
+    schema: z.object({
+      languages: z.array(z.object({
+        id: z.string(), displayName: z.string(), group: z.string(), priority: z.string(),
+      })),
+      binary: z.object({
+        found: z.boolean(), version: z.string().optional(), path: z.string().optional(), reason: z.string().optional(),
+      }),
+      installCommand: z.string(),
+    }),
+  },
+}, {
+  id: 'astgrepStatus.installBinary',
+  service: 'astgrepStatus',
+  namespace: 'astgrepStatus',
+  method: 'installBinary',
+  invocation: { kind: 'direct' } as const,
+  parameters: [],
+  result: {
+    mode: 'strict',
+    typeSymbol: 'dsh-omp-tools/types#AstgrepInstallResult',
+    schema: z.object({
+      ok: z.boolean(),
+      binary: z.object({
+        found: z.boolean(), version: z.string().optional(), path: z.string().optional(), reason: z.string().optional(),
+      }).optional(),
+      message: z.string().optional(),
+      command: z.string().optional(),
+    }),
+  },
+}]
 
 interface TabProps {
   /** slots 系统注入的 translate（按注册时 locale: NS） */
@@ -199,53 +246,6 @@ function AstgrepSettingsTab({ t, loadStatus, installBinary }: TabProps) {
 export function registerAstgrepTab(ctx: Context) {
   const t = ctx.locale.bind(NS)
   ctx.effect(() => ctx.locale.register(NS, dictionaries), 'dsh-omp-tools:astgrep tab dictionaries')
-
-  // 挂载 host remote 贡献（astgrepStatus.describe/installBinary）——strict + zod（与 host manifest 对称）
-  void ctx.remote.$mount({
-    package: 'dsh-omp-tools',
-    descriptors: [{
-      id: 'astgrepStatus.describe',
-      service: 'astgrepStatus',
-      namespace: 'astgrepStatus',
-      method: 'describe',
-      invocation: { kind: 'direct' },
-      parameters: [],
-      result: {
-        mode: 'strict',
-        typeSymbol: 'dsh-omp-tools/types#AstgrepStatusDescribe',
-        schema: z.object({
-          languages: z.array(z.object({
-            id: z.string(), displayName: z.string(), group: z.string(), priority: z.string(),
-          })),
-          binary: z.object({
-            found: z.boolean(), version: z.string().optional(), path: z.string().optional(), reason: z.string().optional(),
-          }),
-          installCommand: z.string(),
-        }),
-      },
-    }, {
-      id: 'astgrepStatus.installBinary',
-      service: 'astgrepStatus',
-      namespace: 'astgrepStatus',
-      method: 'installBinary',
-      invocation: { kind: 'direct' },
-      parameters: [],
-      result: {
-        mode: 'strict',
-        typeSymbol: 'dsh-omp-tools/types#AstgrepInstallResult',
-        schema: z.object({
-          ok: z.boolean(),
-          binary: z.object({
-            found: z.boolean(), version: z.string().optional(), path: z.string().optional(), reason: z.string().optional(),
-          }).optional(),
-          message: z.string().optional(),
-          command: z.string().optional(),
-        }),
-      },
-    }],
-  }).catch((e: unknown) => {
-    console.error('[dsh-omp-tools] astgrep $mount failed:', e)
-  })
 
   ctx.slots.inject('omp-tools.tab', () => ctx.slots.register({
     name: 'omp-tools.tab',

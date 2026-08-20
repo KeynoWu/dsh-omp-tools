@@ -20,8 +20,8 @@ import '@deepseek-ai/dsh-client-ui-settings/client'
 import '@deepseek-ai/dsh-api-remotes/client'
 import { resolveSlotLabel, type TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 import type { SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-runtime/client'
-import { registerLspTab } from '../modules/lsp/src/client/index.tsx'
-import { registerAstgrepTab } from '../modules/astgrep/src/client/index.tsx'
+import { registerLspTab, lspRemoteDescriptors } from '../modules/lsp/src/client/index.tsx'
+import { registerAstgrepTab, astgrepRemoteDescriptors } from '../modules/astgrep/src/client/index.tsx'
 
 // 壳声明的子 slot：每个能力模块一个 tab（对齐 settings.plugins.tab 声明模式）
 declare module '@deepseek-ai/dsh-client-ui-slots' {
@@ -225,6 +225,19 @@ export function apply(ctx: Context) {
     inject: sectionInjected,
     children: { 'omp-tools.tab': { kind: 'list', scope: 'root' } },
   }, OmpToolsSection))
+
+  // 统一挂载 host remote 贡献（所有模块的 descriptors 合并成一次 $mount——
+  // typert RemoteStore 按 package 名注册、只允许一次；新增模块把 descriptors 追加到这里）
+  void ctx.remote.$mount({
+    package: 'dsh-omp-tools',
+    descriptors: [
+      ...lspRemoteDescriptors,
+      ...astgrepRemoteDescriptors,
+    ],
+  }).catch((e: unknown) => {
+    // 暴露 $mount 失败原因（开发期排查用；remote 未就绪时设置页降级为内置列表）
+    console.error('[dsh-omp-tools] $mount failed:', e)
+  })
 
   // 能力模块 tab：迭代 1 = LSP 语言，迭代 2 = AST 搜索
   registerLspTab(ctx)
