@@ -262,6 +262,15 @@ export function registerAstgrepTab(ctx: Context) {
         }
         console.log('[dsh-omp-tools:astgrep] calling remote describe')
         const p = svc.describe()
+        // 诊断：describe 已返回（不挂起）——检查是否为 RPC 错误信封 {ok:false}
+        p.then((r: unknown) => {
+          const envelope = r as { ok?: boolean; error?: unknown; value?: unknown } | undefined
+          if (envelope && typeof envelope === 'object' && 'ok' in envelope && envelope.ok === false) {
+            console.warn('[dsh-omp-tools:astgrep] describe RPC ERROR:', JSON.stringify(envelope.error))
+          } else {
+            console.log('[dsh-omp-tools:astgrep] describe returned:', JSON.stringify(r)?.slice(0, 200))
+          }
+        })
         // 超时诊断：5s 未返回则打印 svc 结构（定位挂起点）
         const timer = setTimeout(() => {
           try {
