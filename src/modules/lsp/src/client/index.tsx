@@ -361,17 +361,17 @@ export function registerLspTab(ctx: Context) {
       setIdle: (ms: number) => void scope.set('idleTimeoutMs', ms),
       // 通过 ctx.get(name) 读 remote 命名空间服务（无 inject 要求）——self-$mount 场景下
       // 不能访问 ctx.remote.lspStatus（cordis 守卫要求 inject 声明，而声明会自我等待死锁）
-      loadStatus: () => {
+      loadStatus: (): Promise<LspStatusDescribe> => {
         const svc = ctx.get?.('remote.lspStatus') as { describe(): Promise<LspStatusDescribe> } | undefined
         if (!svc) return Promise.reject(new Error('LSP status remote not ready yet'))
         // 解包 RPC 信封：ctx.get('remote.X').describe() 返回 {ok, value} 或 {ok:false, error}
-        return svc.describe().then((r: unknown) => {
+        return svc.describe().then((r: unknown): LspStatusDescribe => {
           const env = r as { ok?: boolean; value?: unknown; error?: unknown } | undefined
           if (env && typeof env === 'object' && 'ok' in env) {
-            if (env.ok === true) return env.value
+            if (env.ok === true) return env.value as LspStatusDescribe
             throw new Error(`LSP status RPC failed: ${JSON.stringify(env.error)}`)
           }
-          return r
+          return r as LspStatusDescribe
         })
       },
       installLang: (id: string) => {

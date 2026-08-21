@@ -254,7 +254,7 @@ export function registerAstgrepTab(ctx: Context) {
     label: () => t('nav'),
     locale: NS,
     inject: () => ({
-      loadStatus: () => {
+      loadStatus: (): Promise<AstgrepStatusDescribe> => {
         const svc = ctx.get?.('remote.astgrepStatus') as { describe(): Promise<AstgrepStatusDescribe> } | undefined
         if (!svc) {
           console.warn('[dsh-omp-tools:astgrep] remote.astgrepStatus NOT ready')
@@ -264,13 +264,13 @@ export function registerAstgrepTab(ctx: Context) {
         const p = svc.describe()
         // 解包 RPC 信封：ctx.get('remote.X').describe() 返回 {ok, value} 或 {ok:false, error}
         // （兼容裸数据：无 ok 字段时原样返回）
-        const unwrapped = p.then((r: unknown) => {
+        const unwrapped = p.then((r: unknown): AstgrepStatusDescribe => {
           const env = r as { ok?: boolean; value?: unknown; error?: unknown } | undefined
           if (env && typeof env === 'object' && 'ok' in env) {
-            if (env.ok === true) return env.value
+            if (env.ok === true) return env.value as AstgrepStatusDescribe
             throw new Error(`astgrep status RPC failed: ${JSON.stringify(env.error)}`)
           }
-          return r
+          return r as AstgrepStatusDescribe
         })
         // 超时诊断：5s 未返回则打印 svc 结构（定位挂起点）
         const timer = setTimeout(() => {
