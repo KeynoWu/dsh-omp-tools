@@ -133,6 +133,29 @@ npx tsc --noEmit       # 类型检查
 
 各里程碑的验证结论（沙箱 spawn、双向 JSON-RPC、五工具 TS/Python 9/9、崩溃重试、settings 接线、慢启动独立预算、并发上限、pyright 噪音修复）记录在设计文档 [docs/lsp-module-design.md](./docs/lsp-module-design.md) §11.3；开发期验证脚本依赖本机 DSH 安装，保存在仓库历史中，需要时从 git 历史找回。
 
+## 版本与更新
+
+当前版本：**v0.2.0**（Git tag 对应每个发布点，`git checkout v0.2.0` 可回滚到任意版本）。
+
+| 版本 | 内容 |
+|---|---|
+| v0.2.0 | 迭代 2：astgrep 模块（`ast_search` / `ast_edit`）+ OMP Tools 设置页 tabs + 多 remote 约束链修复 |
+| v0.1.0 | 融合仓库建立：LSP 模块（M1–M4 全部能力）迁入 `modules/lsp` |
+
+**别人如何更新**：
+
+```bash
+# 源码安装者（git clone + symlink）：
+git pull && npm run build        # 拉到最新代码后重建产物
+
+# 或回滚到指定版本：
+git checkout v0.1.0 && npm run build
+
+# 市场（dsh-plugin topic）用户：每日 06:00 自动抓取默认分支最新代码，无需手动操作
+```
+
+> 插件当前以源码形式分发（未发布 npm）；`package.json version` 与 git tag 同步维护（每个迭代 bump + tag）。若未来发布 npm，用户可用 `dsh plugin --profile <name> add dsh-omp-tools` 安装、`pnpm update` 更新。
+
 ## 里程碑
 
 - **M0** ✅ 风险验证（沙箱可 spawn 外部二进制、双向 JSON-RPC、环境 scrub）

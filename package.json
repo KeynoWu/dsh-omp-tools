@@ -1,7 +1,7 @@
 {
   "name": "dsh-omp-tools",
-  "version": "0.1.0",
-  "description": "DSH coding 增强工具集 — omp 风格能力分批迭代（模块 1：LSP 语义导航/诊断）",
+  "version": "0.2.0",
+  "description": "DSH coding 增强工具集 — omp 风格能力分批迭代（LSP 语义导航/诊断 + AST 结构化搜索/批量重写）",
   "type": "module",
   "main": "src/index.ts",
   "exports": {
