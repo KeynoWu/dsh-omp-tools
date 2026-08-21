@@ -49,6 +49,9 @@ var _installBinary_dec, _describe_dec, _a, _init;
 import { Remote, TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
 import { ASTGREP_CATALOG, ASTGREP_INSTALL } from "../src/catalog.ts";
 import { detectAstgrep } from "../src/search.ts";
+function jsonSafe(value) {
+  return JSON.parse(JSON.stringify(value));
+}
 class AstgrepStatusGateway extends (_a = TypertRemoteService, _describe_dec = [Remote("describe")], _installBinary_dec = [Remote("installBinary")], _a) {
   constructor(ctx) {
     super(ctx, "astgrepStatus");
@@ -56,11 +59,11 @@ class AstgrepStatusGateway extends (_a = TypertRemoteService, _describe_dec = [R
   }
   describe() {
     const cwd = process.cwd();
-    return {
+    return jsonSafe({
       languages: ASTGREP_CATALOG,
       binary: detectAstgrep(cwd),
       installCommand: `${ASTGREP_INSTALL.command} ${ASTGREP_INSTALL.args.join(" ")}`
-    };
+    });
   }
   async installBinary() {
     const cwd = process.cwd();
@@ -76,17 +79,20 @@ class AstgrepStatusGateway extends (_a = TypertRemoteService, _describe_dec = [R
       });
       const outcome = await handle.done;
       if (outcome.exitCode !== 0) {
-        return { ok: false, message: `Install failed (exit ${outcome.exitCode})`, command: argv.join(" ") };
+        return jsonSafe({ ok: false, message: `Install failed (exit ${outcome.exitCode})`, command: argv.join(" ") });
       }
       const binary = detectAstgrep(cwd);
-      return {
-        ok: binary.found,
+      if (binary.found) {
+        return jsonSafe({ ok: true, binary, command: argv.join(" ") });
+      }
+      return jsonSafe({
+        ok: false,
         binary,
-        message: binary.found ? void 0 : "Install ran but ast-grep still not detected; check PATH",
+        message: "Install ran but ast-grep still not detected; check PATH",
         command: argv.join(" ")
-      };
+      });
     } catch (error) {
-      return { ok: false, message: `Install error: ${error instanceof Error ? error.message : String(error)}`, command: argv.join(" ") };
+      return jsonSafe({ ok: false, message: `Install error: ${error instanceof Error ? error.message : String(error)}`, command: argv.join(" ") });
     }
   }
 }

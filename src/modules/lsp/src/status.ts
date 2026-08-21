@@ -39,6 +39,16 @@ export interface LspInstallResult {
 
 type ConfigReader = () => { enabled: Record<string, boolean>; idleTimeoutMs: number }
 
+/**
+ * JSON 安全化：删除对象中的 undefined 字段值。
+ * typert 的边界校验（assertJsonValue 遍历 ownKeys）会拒绝 undefined——
+ * zod parse 不删除已声明 optional 字段的 undefined 键，wire 层会报
+ * "business result failed boundary validation"。
+ */
+function jsonSafe<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T
+}
+
 export class LspStatusGateway extends TypertRemoteService {
   private readonly getConfig: ConfigReader
 
@@ -57,7 +67,7 @@ export class LspStatusGateway extends TypertRemoteService {
       statuses[entry.id] = detectServer(entry.server, cwd)
     }
     const config = this.getConfig()
-    return {
+    return jsonSafe({
       languages: CATALOG.map(({ id, displayName, group, priority, heavy, experimental }) => ({
         id,
         displayName,
@@ -69,7 +79,7 @@ export class LspStatusGateway extends TypertRemoteService {
       statuses,
       enabled: config.enabled,
       idleTimeoutMs: config.idleTimeoutMs,
-    }
+    })
   }
 
   /**
@@ -79,10 +89,10 @@ export class LspStatusGateway extends TypertRemoteService {
   @Remote('installLanguage')
   async installLanguage(languageId: string): Promise<LspInstallResult> {
     const entry: LanguageEntry | undefined = CATALOG.find((e) => e.id === languageId)
-    if (!entry) return { ok: false, message: `Unknown language ${languageId}` }
+    if (!entry) return jsonSafe({ ok: false, message: `Unknown language ${languageId}` })
     const inst = entry.install
     if (!inst?.command) {
-      return { ok: false, message: inst?.note ?? `No automated install for ${entry.displayName}` }
+      return jsonSafe({ ok: false, message: inst?.note ?? `No automated install for ${entry.displayName}` })
     }
     const argv = [inst.command, ...(inst.args ?? [])]
     const cwd = process.cwd()
@@ -92,7 +102,7 @@ export class LspStatusGateway extends TypertRemoteService {
         stdio: { stdin: 'ignore' | 'pipe'; stdout: { maxBytes: number }; stderr: { maxBytes: number } }
         graceMs: number
       }): { done: Promise<{ exitCode: number | null }>; terminate(): void } } }).subprocess
-      if (!subprocess) return { ok: false, message: 'subprocess seam unavailable' }
+      if (!subprocess) return jsonSafe({ ok: false, message: 'subprocess seam unavailable' })
       const handle = subprocess.spawn({
         argv,
         cwd,
@@ -101,18 +111,21 @@ export class LspStatusGateway extends TypertRemoteService {
       })
       const outcome = await handle.done
       if (outcome.exitCode !== 0) {
-        return { ok: false, message: `Install failed (exit ${outcome.exitCode})`, command: argv.join(' ') }
+        return jsonSafe({ ok: false, message: `Install failed (exit ${outcome.exitCode})`, command: argv.join(' ') })
       }
       // 安装后重新检测
       const status = detectServer(entry.server, cwd)
-      return {
-        ok: status.found,
-        status,
-        message: status.found ? undefined : 'Install ran but server still not detected; check PATH',
-        command: argv.join(' '),
+      if (status.found) {
+        return jsonSafe({ ok: true, status, command: argv.join(' ') })
       }
+      return jsonSafe({
+        ok: false,
+        status,
+        message: 'Install ran but server still not detected; check PATH',
+        command: argv.join(' '),
+      })
     } catch (error) {
-      return { ok: false, message: `Install error: ${error instanceof Error ? error.message : String(error)}`, command: argv.join(' ') }
+      return jsonSafe({ ok: false, message: `Install error: ${error instanceof Error ? error.message : String(error)}`, command: argv.join(' ') })
     }
   }
 }

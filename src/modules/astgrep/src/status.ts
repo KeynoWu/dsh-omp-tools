@@ -22,6 +22,16 @@ export interface AstgrepInstallResult {
   command?: string
 }
 
+/**
+ * JSON 安全化：删除对象中的 undefined 字段值。
+ * typert 的边界校验（assertJsonValue 遍历 ownKeys）会拒绝 undefined——
+ * zod parse 不删除已声明 optional 字段的 undefined 键，wire 层会报
+ * "business result failed boundary validation"。
+ */
+function jsonSafe<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T
+}
+
 export class AstgrepStatusGateway extends TypertRemoteService {
   constructor(ctx: Context) {
     super(ctx, 'astgrepStatus')
@@ -31,11 +41,11 @@ export class AstgrepStatusGateway extends TypertRemoteService {
   @Remote('describe')
   describe(): AstgrepStatusDescribe {
     const cwd = process.cwd()
-    return {
+    return jsonSafe({
       languages: ASTGREP_CATALOG,
       binary: detectAstgrep(cwd),
       installCommand: `${ASTGREP_INSTALL.command} ${ASTGREP_INSTALL.args.join(' ')}`,
-    }
+    })
   }
 
   /** 安装引导：npm 全局安装 @ast-grep/cli（用户显式触发）。
@@ -59,17 +69,20 @@ export class AstgrepStatusGateway extends TypertRemoteService {
       })
       const outcome = await handle.done
       if (outcome.exitCode !== 0) {
-        return { ok: false, message: `Install failed (exit ${outcome.exitCode})`, command: argv.join(' ') }
+        return jsonSafe({ ok: false, message: `Install failed (exit ${outcome.exitCode})`, command: argv.join(' ') })
       }
       const binary = detectAstgrep(cwd)
-      return {
-        ok: binary.found,
-        binary,
-        message: binary.found ? undefined : 'Install ran but ast-grep still not detected; check PATH',
-        command: argv.join(' '),
+      if (binary.found) {
+        return jsonSafe({ ok: true, binary, command: argv.join(' ') })
       }
+      return jsonSafe({
+        ok: false,
+        binary,
+        message: 'Install ran but ast-grep still not detected; check PATH',
+        command: argv.join(' '),
+      })
     } catch (error) {
-      return { ok: false, message: `Install error: ${error instanceof Error ? error.message : String(error)}`, command: argv.join(' ') }
+      return jsonSafe({ ok: false, message: `Install error: ${error instanceof Error ? error.message : String(error)}`, command: argv.join(' ') })
     }
   }
 }

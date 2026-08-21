@@ -50,6 +50,9 @@ var _installLanguage_dec, _describe_dec, _a, _init;
 import { Remote, TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
 import { CATALOG } from "../src/catalog.ts";
 import { detectServer } from "../src/detect.ts";
+function jsonSafe(value) {
+  return JSON.parse(JSON.stringify(value));
+}
 class LspStatusGateway extends (_a = TypertRemoteService, _describe_dec = [Remote("describe")], _installLanguage_dec = [Remote("installLanguage")], _a) {
   constructor(ctx, getConfig) {
     super(ctx, "lspStatus");
@@ -64,7 +67,7 @@ class LspStatusGateway extends (_a = TypertRemoteService, _describe_dec = [Remot
       statuses[entry.id] = detectServer(entry.server, cwd);
     }
     const config = this.getConfig();
-    return {
+    return jsonSafe({
       languages: CATALOG.map(({ id, displayName, group, priority, heavy, experimental }) => ({
         id,
         displayName,
@@ -76,20 +79,20 @@ class LspStatusGateway extends (_a = TypertRemoteService, _describe_dec = [Remot
       statuses,
       enabled: config.enabled,
       idleTimeoutMs: config.idleTimeoutMs
-    };
+    });
   }
   async installLanguage(languageId) {
     const entry = CATALOG.find((e) => e.id === languageId);
-    if (!entry) return { ok: false, message: `Unknown language ${languageId}` };
+    if (!entry) return jsonSafe({ ok: false, message: `Unknown language ${languageId}` });
     const inst = entry.install;
     if (!inst?.command) {
-      return { ok: false, message: inst?.note ?? `No automated install for ${entry.displayName}` };
+      return jsonSafe({ ok: false, message: inst?.note ?? `No automated install for ${entry.displayName}` });
     }
     const argv = [inst.command, ...inst.args ?? []];
     const cwd = process.cwd();
     try {
       const subprocess = this.ctx.subprocess;
-      if (!subprocess) return { ok: false, message: "subprocess seam unavailable" };
+      if (!subprocess) return jsonSafe({ ok: false, message: "subprocess seam unavailable" });
       const handle = subprocess.spawn({
         argv,
         cwd,
@@ -98,17 +101,20 @@ class LspStatusGateway extends (_a = TypertRemoteService, _describe_dec = [Remot
       });
       const outcome = await handle.done;
       if (outcome.exitCode !== 0) {
-        return { ok: false, message: `Install failed (exit ${outcome.exitCode})`, command: argv.join(" ") };
+        return jsonSafe({ ok: false, message: `Install failed (exit ${outcome.exitCode})`, command: argv.join(" ") });
       }
       const status = detectServer(entry.server, cwd);
-      return {
-        ok: status.found,
+      if (status.found) {
+        return jsonSafe({ ok: true, status, command: argv.join(" ") });
+      }
+      return jsonSafe({
+        ok: false,
         status,
-        message: status.found ? void 0 : "Install ran but server still not detected; check PATH",
+        message: "Install ran but server still not detected; check PATH",
         command: argv.join(" ")
-      };
+      });
     } catch (error) {
-      return { ok: false, message: `Install error: ${error instanceof Error ? error.message : String(error)}`, command: argv.join(" ") };
+      return jsonSafe({ ok: false, message: `Install error: ${error instanceof Error ? error.message : String(error)}`, command: argv.join(" ") });
     }
   }
 }
