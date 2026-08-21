@@ -151,6 +151,8 @@ npm run build          # build:status（host remote 装饰器转译）+ build:cl
 npx tsc --noEmit       # 类型检查
 ```
 
+**发布流程（强制）**：本地脚本验证 → **GUI 实测**（重启 GUI 后 agent 亲自调用工具：只读工具直接验证；写工具验证到审批拦截层 + 正常会话批准后走通）→ **全部通过后才 bump + tag + Release**。跳过 GUI 实测不得发布。
+
 各里程碑的验证结论（沙箱 spawn、双向 JSON-RPC、五工具 TS/Python 9/9、崩溃重试、settings 接线、慢启动独立预算、并发上限、pyright 噪音修复）记录在设计文档 [docs/lsp-module-design.md](./docs/lsp-module-design.md) §11.3；开发期验证脚本依赖本机 DSH 安装，保存在仓库历史中，需要时从 git 历史找回。
 
 ## 版本与更新
