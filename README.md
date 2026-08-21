@@ -1,8 +1,10 @@
 # dsh-omp-tools
 
-**给 DeepSeek Harness 的 coding 能力增强工具集**——参考 oh-my-pi（omp）的 LSP 封装与工具设计，按能力模块分批迭代。**模块 1（LSP 语义导航/诊断）已完成**。
+[![DSH Market](https://raw.githubusercontent.com/2BingLing/dsh-market/master/assets/readme/badge-listed-zh.svg)](https://dsh.market/)
 
-> 状态：模块 1（LSP）M1–M4 已实现并通过验证；模块 2+（ast-grep / hashline 编辑 / read 摘要 / memory）规划中
+**给 DeepSeek Harness 的 coding 能力增强工具集**——参考 oh-my-pi（omp）的 LSP 封装与工具设计，按能力模块分批迭代。**模块 1（LSP 语义导航/诊断）+ 模块 2（AST 结构化搜索/批量重写）已完成**。
+
+> 状态：迭代 1（LSP）+ 迭代 2（astgrep）已实现并通过验证；迭代 3+（hashline 编辑 / read 摘要 / memory）规划中
 > 设计文档：[docs/lsp-module-design.md](./docs/lsp-module-design.md) v2
 
 ---
