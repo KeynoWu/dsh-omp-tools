@@ -262,14 +262,15 @@ export function registerAstgrepTab(ctx: Context) {
         }
         console.log('[dsh-omp-tools:astgrep] calling remote describe')
         const p = svc.describe()
-        // 诊断：describe 已返回（不挂起）——检查是否为 RPC 错误信封 {ok:false}
-        p.then((r: unknown) => {
-          const envelope = r as { ok?: boolean; error?: unknown; value?: unknown } | undefined
-          if (envelope && typeof envelope === 'object' && 'ok' in envelope && envelope.ok === false) {
-            console.warn('[dsh-omp-tools:astgrep] describe RPC ERROR:', JSON.stringify(envelope.error))
-          } else {
-            console.log('[dsh-omp-tools:astgrep] describe returned:', JSON.stringify(r)?.slice(0, 200))
+        // 解包 RPC 信封：ctx.get('remote.X').describe() 返回 {ok, value} 或 {ok:false, error}
+        // （兼容裸数据：无 ok 字段时原样返回）
+        const unwrapped = p.then((r: unknown) => {
+          const env = r as { ok?: boolean; value?: unknown; error?: unknown } | undefined
+          if (env && typeof env === 'object' && 'ok' in env) {
+            if (env.ok === true) return env.value
+            throw new Error(`astgrep status RPC failed: ${JSON.stringify(env.error)}`)
           }
+          return r
         })
         // 超时诊断：5s 未返回则打印 svc 结构（定位挂起点）
         const timer = setTimeout(() => {
@@ -281,11 +282,19 @@ export function registerAstgrepTab(ctx: Context) {
             console.warn('[dsh-omp-tools:astgrep] timeout probe failed:', e)
           }
         }, 5000)
-        return p.finally(() => clearTimeout(timer))
+        return unwrapped.finally(() => clearTimeout(timer))
       },
       installBinary: () => {
         const svc = ctx.get?.('remote.astgrepStatus') as { installBinary(): Promise<{ ok: boolean; message?: string }> } | undefined
-        return svc ? svc.installBinary() : Promise.reject(new Error('astgrep status remote not ready yet'))
+        if (!svc) return Promise.reject(new Error('astgrep status remote not ready yet'))
+        return svc.installBinary().then((r: unknown) => {
+          const env = r as { ok?: boolean; value?: unknown; error?: unknown } | undefined
+          if (env && typeof env === 'object' && 'ok' in env) {
+            if (env.ok === true) return env.value as { ok: boolean; message?: string }
+            throw new Error(`astgrep install RPC failed: ${JSON.stringify(env.error)}`)
+          }
+          return r as { ok: boolean; message?: string }
+        })
       },
     }),
   }, AstgrepSettingsTab))

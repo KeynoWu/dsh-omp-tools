@@ -363,11 +363,28 @@ export function registerLspTab(ctx: Context) {
       // 不能访问 ctx.remote.lspStatus（cordis 守卫要求 inject 声明，而声明会自我等待死锁）
       loadStatus: () => {
         const svc = ctx.get?.('remote.lspStatus') as { describe(): Promise<LspStatusDescribe> } | undefined
-        return svc ? svc.describe() : Promise.reject(new Error('LSP status remote not ready yet'))
+        if (!svc) return Promise.reject(new Error('LSP status remote not ready yet'))
+        // 解包 RPC 信封：ctx.get('remote.X').describe() 返回 {ok, value} 或 {ok:false, error}
+        return svc.describe().then((r: unknown) => {
+          const env = r as { ok?: boolean; value?: unknown; error?: unknown } | undefined
+          if (env && typeof env === 'object' && 'ok' in env) {
+            if (env.ok === true) return env.value
+            throw new Error(`LSP status RPC failed: ${JSON.stringify(env.error)}`)
+          }
+          return r
+        })
       },
       installLang: (id: string) => {
         const svc = ctx.get?.('remote.lspStatus') as { installLanguage(id: string): Promise<{ ok: boolean; message?: string }> } | undefined
-        return svc ? svc.installLanguage(id) : Promise.reject(new Error('LSP status remote not ready yet'))
+        if (!svc) return Promise.reject(new Error('LSP status remote not ready yet'))
+        return svc.installLanguage(id).then((r: unknown) => {
+          const env = r as { ok?: boolean; value?: unknown; error?: unknown } | undefined
+          if (env && typeof env === 'object' && 'ok' in env) {
+            if (env.ok === true) return env.value as { ok: boolean; message?: string }
+            throw new Error(`LSP install RPC failed: ${JSON.stringify(env.error)}`)
+          }
+          return r as { ok: boolean; message?: string }
+        })
       },
     }),
   }, LspSettingsSection))
