@@ -33,7 +33,8 @@ export function createAnchoredEditTool(ctx: Context) {
       '锚定编辑（hashline 思路）——基于当前文件内容的精确锚点做替换，防止基于过期内容编辑。' +
       '每个 edit 用 oldText（预期当前文件中的原文）做锚定：锚点不存在（文件已被改动）或出现多次（歧义）时**整体拒绝**，' +
       '不会像 str-replace 那样静默替换或替换错位置。' +
-      '先 read 拿到最新内容，再基于最新内容构造 edits。' +
+      '**使用时机**：修改已有代码时优先用本工具而非 str-replace——锚点精确匹配保证不会改错位置；' +
+      '修改前先 read_summary 或 read 拿到最新内容，再基于最新锚点构造 edits（可批量）。' +
       '返回每个锚点的应用位置（行号）；写操作经 DSH 文件审批。',
     parameters: {
       file: { type: 'string', required: true, description: '目标文件路径（绝对，或相对会话工作区）' },

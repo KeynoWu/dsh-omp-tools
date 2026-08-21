@@ -38,7 +38,9 @@ export function createReadSummaryTool(ctx: Context) {
     description:
       '大文件摘要读取——不 dump 全文，先给结构化摘要：文件规模（行数/字节/语言）+ 符号索引（函数/类/方法/常量，按行号定位）。' +
       '需要局部内容时用 lines 参数取片段（如 "50-100" / "50-" / "-100" / "50"）。' +
-      '适合大文件/长会话：先摘要定位，再按需取片段，省 token。小文件直接用 read 更省事。',
+      '**使用时机**：读取超过约 100 行的文件、或修改代码前需要定位目标符号时，优先用本工具而非 read——省 token、防上下文稀释；' +
+      '先用摘要定位目标行号，再按需取片段；修改场景可配合 edit_anchored（read_summary 定位 → edit_anchored 精确修改）。' +
+      '小文件（<50 行）直接用 read 更省事。',
     parameters: {
       file: { type: 'string', required: true, description: '目标文件路径（绝对，或相对会话工作区）' },
       lines: { type: 'string', description: '行选择器（1-based）："50-100" 区间、"50-" 到末尾、"-100" 开头到 100、"50" 单行' },

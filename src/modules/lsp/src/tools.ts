@@ -269,7 +269,8 @@ export function createDiagnosticsTool(ctx: Context, pool: LspPool, getConfig: ()
     name: 'lsp_diagnostics',
     description:
       '获取文件的语言级诊断（类型错误/语法错误/警告），基于 LSP 语言服务器增量分析——比跑编译器快且精确到行。' +
-      '参数 file 为目标文件。返回按 severity 排序的错误列表（<file>:<line>:<col> <severity>: <message>）；无问题返回 OK。',
+      '参数 file 为目标文件。返回按 severity 排序的错误列表（<file>:<line>:<col> <severity>: <message>）；无问题返回 OK。' +
+      '**使用时机**：修改或新增代码后调用本工具验证（写完先查错）；编译器报错但不确定位置时也可先用本工具定位。',
     parameters: {
       file: { type: 'string', required: true, description: '目标文件路径（绝对，或相对会话工作区）' },
       timeout: { type: 'number', description: '诊断等待超时（秒，默认 20，钳制 5..300）' },
