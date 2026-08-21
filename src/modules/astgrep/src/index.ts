@@ -19,9 +19,19 @@ export function setupAstgrepModule(ctx: Context) {
   console.log('[dsh-omp-tools:astgrep] setup OK')
 
   // host remote：设置页状态（二进制检测 + 安装引导）
-  new AstgrepStatusGateway(ctx)
+  try {
+    const gateway = new AstgrepStatusGateway(ctx)
+    console.log('[dsh-omp-tools:astgrep] gateway registered:', !!gateway, '| service astgrepStatus')
+  } catch (e) {
+    console.error('[dsh-omp-tools:astgrep] gateway FAILED:', e instanceof Error ? e.stack ?? e.message : String(e))
+  }
 
   // 工具注册：ast_search（只读）+ ast_edit（写，经 ctx.fs 审批）
-  ctx.tools.register(createSearchTool(ctx))
-  ctx.tools.register(createEditTool(ctx))
+  try {
+    ctx.tools.register(createSearchTool(ctx))
+    ctx.tools.register(createEditTool(ctx))
+    console.log('[dsh-omp-tools:astgrep] tools registered: ast_search, ast_edit')
+  } catch (e) {
+    console.error('[dsh-omp-tools:astgrep] tools FAILED:', e instanceof Error ? e.message : String(e))
+  }
 }
