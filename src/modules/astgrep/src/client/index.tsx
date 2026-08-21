@@ -256,7 +256,12 @@ export function registerAstgrepTab(ctx: Context) {
     inject: () => ({
       loadStatus: () => {
         const svc = ctx.get?.('remote.astgrepStatus') as { describe(): Promise<AstgrepStatusDescribe> } | undefined
-        return svc ? svc.describe() : Promise.reject(new Error('astgrep status remote not ready yet'))
+        if (!svc) {
+          console.warn('[dsh-omp-tools:astgrep] remote.astgrepStatus NOT ready')
+          return Promise.reject(new Error('astgrep status remote not ready yet'))
+        }
+        console.log('[dsh-omp-tools:astgrep] calling remote describe')
+        return svc.describe()
       },
       installBinary: () => {
         const svc = ctx.get?.('remote.astgrepStatus') as { installBinary(): Promise<{ ok: boolean; message?: string }> } | undefined
