@@ -234,12 +234,6 @@ export function apply(ctx: Context) {
       ...lspRemoteDescriptors,
       ...astgrepRemoteDescriptors,
     ],
-  }).then(() => {
-    // 诊断：$mount 完成后确认各 namespace 服务可用性
-    const probe = (key: string) => {
-      try { return ctx.get?.(key) !== undefined ? 'OK' : 'MISSING' } catch { return 'ERR' }
-    }
-    console.log('[dsh-omp-tools] $mount OK | lspStatus:', probe('remote.lspStatus'), '| astgrepStatus:', probe('remote.astgrepStatus'))
   }).catch((e: unknown) => {
     // 暴露 $mount 失败原因（开发期排查用；remote 未就绪时设置页降级为内置列表）
     console.error('[dsh-omp-tools] $mount failed:', e)

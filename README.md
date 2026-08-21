@@ -140,6 +140,7 @@ npx tsc --noEmit       # 类型检查
 - **M2** ✅ 四工具 + 生命周期 + 全量目录（9/9 + 崩溃重试 PASS）
 - **M3** ✅ host settings 接线 + client 设置页（esbuild ModuleLoader bundle，浏览器验收通过）
 - **M4** ✅ host remote 状态数据源 + 安装引导 + `lsp_rename`（ctx.fs 写审批）+ pyright 噪音修复 + 慢启动实测 + 并发上限（workspace 诊断按需）
+- **迭代 2** ✅ astgrep 模块：`ast_search` / `ast_edit`（AST 搜索 + 批量重写，dry-run 预览 + ctx.fs 审批写盘）+ AST 搜索设置页 tab（二进制状态 + 一键安装引导）+ 多 remote 约束链 4 层坑全记录（§11.3 7–10）
 
 ## License
 

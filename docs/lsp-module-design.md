@@ -297,3 +297,9 @@ lsp:
     4. **self-$mount 的访问方式**：`ctx.remote.lspStatus` 访问触发 cordis "without inject" 守卫（inject 声明会自我等待死锁）——**改用 `ctx.get('remote.lspStatus')`**（cordis 无 inject 要求的 store 读取）
     5. 排障链条：host manifest 缺 model → 启动崩溃（omp 协助修复）→ client src-json → strict → install 保留名 → without inject 守卫，共四层问题，全部记录
     6. **维护注意**：改 `src/status.ts` 的 @Remote 方法/返回类型后，需**手动同步** `lib/typert.host.js`（不会被构建脚本覆盖）+ client `$mount` descriptors（三处一致）
+  - **迭代 2（astgrep）多 remote 扩展（2026 实测，设置页状态正常 + 安装引导成功）**——融合仓库第二模块的 typert 约束链新增四层：
+    7. **`$mount` 只能一次**：typert RemoteStore 按 **package 名** 注册——同包二次 `$mount` 报 `Remote package "dsh-omp-tools" is already registered`。**多模块必须合并 descriptors 成一次 `$mount`**（根壳统一挂载，模块导出 descriptors 数组）
+    8. **信封解包**：`ctx.get('remote.X').describe()` 返回 **`{ok, value}` 信封**而非裸数据（invoke 统一包一层）——组件直接 setState(信封) 会导致 `status.binary` undefined（徽标 `…` 且不报错）。**必须解包**：`env.ok ? env.value : throw`（兼容裸数据：无 ok 字段原样返回）
+    9. **JSON 安全边界**：typert 的 `assertJsonValue` 遍历返回对象 ownKeys，**值为 `undefined` 的键被拒**（"business result failed boundary validation"）——zod parse 不删除已声明 optional 字段的 undefined 键（如 `message: undefined`）。**所有 gateway 返回前统一 `jsonSafe()`**（`JSON.parse(JSON.stringify(v))` 删除 undefined 字段）
+    10. **方法名 vs @Remote 参数**：`@Remote('installBinary')` 只改装饰器参数不够——**方法名本身也必须改**（esbuild 转译后 `__decorateElement` 注册的是方法名），且 typert host manifest `method`、client descriptor `method` 四方必须一致（gateway 方法名 = @Remote 参数 = manifest method = client descriptor method）
+  - **调试方法总结**：host 端 `ctx.get?.('typert').local.list()` 打印已注册 endpoint（确认 manifest 是否加载）；client 端 `$mount().then` 探针 + describe 超时诊断 + 返回值打印，逐层切分（$mount → service 存在性 → RPC 信封 → host 边界）
