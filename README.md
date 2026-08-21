@@ -17,8 +17,8 @@
 |---|---|---|
 | **lsp** | 语言服务器池 + 语义工具（诊断/定义/引用/hover/rename） | ✅ 已完成（迭代 1） |
 | **astgrep** | AST 结构化搜索/批量重写（语法感知，避开注释/字符串噪音） | ✅ 已完成（迭代 2） |
-| edit | hashline 锚定编辑（防过期内容编辑） | 📋 规划（迭代 3） |
-| read | 大文件摘要 + 选择器（省 token） | 📋 规划（迭代 3） |
+| **edit** | hashline 锚定编辑（防过期内容编辑） | ✅ 已完成（迭代 3） |
+| **read** | 大文件摘要 + 选择器（省 token） | ✅ 已完成（迭代 3） |
 | memory | learn/checkpoint（跨会话沉淀） | 📋 规划（迭代 4） |
 
 ---
@@ -82,6 +82,24 @@
 
 ---
 
+## 模块 3：锚定编辑 + 摘要读取（coding 准确度增强）
+
+两个互补的**纯文本工具**（无外部依赖、无配置项、无设置页 tab），直接作用于 agent 的编辑准确度与上下文效率：
+
+### 工具
+
+| 工具 | 作用 |
+|---|---|
+| `edit_anchored` | **锚定编辑**（hashline 思路）：每个替换以原文精确锚定——锚点不存在（**文件已被改动**）或出现多次（**歧义**）时**整体拒绝**，防止"基于过期内容编辑"静默错位（补上核心 `str-replace` 的漏洞） |
+| `read_summary` | **大文件摘要读取**：不 dump 全文，先给结构化摘要（行数/字节/语言 + **符号索引**：函数/类/方法/常量按行号定位），需要局部内容用 `lines` 选择器取片段（`"50-100"` / `"50-"` / `"-100"` / `"50"`）——省 token、防上下文稀释 |
+
+### 使用场景
+
+- `edit_anchored`：改完 A 后基于最新 `read` 内容批量编辑；文件被其他操作改动时**明确报错而非错位替换**
+- `read_summary`：长会话 / 大代码库——先摘要定位符号，再按需取片段，避免一次读入数千行
+
+---
+
 ## 快速开始
 
 ```bash
@@ -137,10 +155,11 @@ npx tsc --noEmit       # 类型检查
 
 ## 版本与更新
 
-当前版本：**v0.2.0**（Git tag 对应每个发布点，`git checkout v0.2.0` 可回滚到任意版本）。
+当前版本：**v0.3.0**（Git tag 对应每个发布点，`git checkout v0.2.0` 可回滚到任意版本）。
 
 | 版本 | 内容 |
 |---|---|
+| v0.3.0 | 迭代 3：`edit_anchored`（hashline 防过期编辑）+ `read_summary`（摘要 + 选择器） |
 | v0.2.0 | 迭代 2：astgrep 模块（`ast_search` / `ast_edit`）+ OMP Tools 设置页 tabs + 多 remote 约束链修复 |
 | v0.1.0 | 融合仓库建立：LSP 模块（M1–M4 全部能力）迁入 `modules/lsp` |
 
@@ -166,6 +185,7 @@ git checkout v0.1.0 && npm run build
 - **M3** ✅ host settings 接线 + client 设置页（esbuild ModuleLoader bundle，浏览器验收通过）
 - **M4** ✅ host remote 状态数据源 + 安装引导 + `lsp_rename`（ctx.fs 写审批）+ pyright 噪音修复 + 慢启动实测 + 并发上限（workspace 诊断按需）
 - **迭代 2** ✅ astgrep 模块：`ast_search` / `ast_edit`（AST 搜索 + 批量重写，dry-run 预览 + ctx.fs 审批写盘）+ AST 搜索设置页 tab（二进制状态 + 一键安装引导）+ 多 remote 约束链 4 层坑全记录（§11.3 7–10）
+- **迭代 3** ✅ 锚定编辑 + 摘要读取：`edit_anchored`（hashline 防过期编辑：锚点缺失/歧义整体拒绝）+ `read_summary`（符号索引摘要 + 行选择器片段）——纯文本工具，验证 6/6
 
 ## License
 

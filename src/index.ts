@@ -12,8 +12,8 @@
  * 模块清单（迭代路线）：
  * - modules/lsp      迭代 1：语言服务器池 + 语义工具（已完成 M1–M4）
  * - modules/astgrep  迭代 2：AST 结构化搜索/批量重写（已完成）
- * - modules/edit     迭代 3：hashline 锚定编辑（规划）
- * - modules/read     迭代 3：大文件摘要 + 选择器（规划）
+ * - modules/edit     迭代 3：hashline 锚定编辑（已完成）
+ * - modules/read     迭代 3：大文件摘要 + 选择器（已完成）
  * - modules/memory   迭代 4：learn/checkpoint（规划）
  */
 import z from '@deepseek-ai/schemastery'
@@ -21,6 +21,8 @@ import type { Context } from '@deepseek-ai/cordis'
 import '@deepseek-ai/dsh-subprocess' // 触发 Context.subprocess 类型增强
 import { setupLspModule } from './modules/lsp/src/index.ts'
 import { setupAstgrepModule } from './modules/astgrep/src/index.ts'
+import { setupEditModule } from './modules/edit/src/index.ts'
+import { setupReadModule } from './modules/read/src/index.ts'
 
 export const name = 'dsh-omp-tools'
 
@@ -42,5 +44,11 @@ export function apply(ctx: Context, config: Config) {
   }
   if (config.modules?.astgrep) {
     setupAstgrepModule(ctx)
+  }
+  if (config.modules?.edit) {
+    setupEditModule(ctx)
+  }
+  if (config.modules?.read) {
+    setupReadModule(ctx)
   }
 }
