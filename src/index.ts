@@ -43,4 +43,17 @@ export function apply(ctx: Context, config: Config) {
   if (config.modules?.astgrep) {
     setupAstgrepModule(ctx)
   }
+
+  // 诊断：打印 typert.local 注册的 endpoint（定位 astgrepStatus RPC 无响应）
+  setTimeout(() => {
+    try {
+      const typert = ctx.get?.('typert') as { local?: { list?(): Array<{ namespace?: string; method?: string; id?: string }> } } | undefined
+      const endpoints = typert?.local?.list?.() ?? []
+      console.log('[dsh-omp-tools] typert.local endpoints:', endpoints.length === 0
+        ? '(empty)'
+        : endpoints.map((d) => `${d.namespace}/${d.method}`).join(', '))
+    } catch (e) {
+      console.error('[dsh-omp-tools] typert.local probe failed:', e instanceof Error ? e.message : String(e))
+    }
+  }, 3000)
 }
