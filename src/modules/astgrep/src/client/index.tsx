@@ -261,7 +261,18 @@ export function registerAstgrepTab(ctx: Context) {
           return Promise.reject(new Error('astgrep status remote not ready yet'))
         }
         console.log('[dsh-omp-tools:astgrep] calling remote describe')
-        return svc.describe()
+        const p = svc.describe()
+        // 超时诊断：5s 未返回则打印 svc 结构（定位挂起点）
+        const timer = setTimeout(() => {
+          try {
+            console.warn('[dsh-omp-tools:astgrep] describe TIMEOUT 5s — svc keys:', Object.keys(svc), '| describe:', typeof (svc as { describe?: unknown }).describe)
+            const conn = ctx.get?.('connection')
+            console.warn('[dsh-omp-tools:astgrep] connection:', conn !== undefined ? 'present' : 'MISSING')
+          } catch (e) {
+            console.warn('[dsh-omp-tools:astgrep] timeout probe failed:', e)
+          }
+        }, 5000)
+        return p.finally(() => clearTimeout(timer))
       },
       installBinary: () => {
         const svc = ctx.get?.('remote.astgrepStatus') as { installBinary(): Promise<{ ok: boolean; message?: string }> } | undefined
